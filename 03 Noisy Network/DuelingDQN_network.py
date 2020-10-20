@@ -4,6 +4,14 @@ import torch.nn.functional as F
 import math
 import time
 import pickle
+"""
+학습 속도문제로 제외. 엄밀한 제어를 위해선 사용!
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+"""
+torch.manual_seed(7777)
+torch.cuda.manual_seed(7777)
+torch.cuda.manual_seed_all(7777) # if use multi-GPU
 
 class Factorised_noisy_layer(nn.Module):
     def __init__(self, input_p, output_q, sigma_zero=0.5):

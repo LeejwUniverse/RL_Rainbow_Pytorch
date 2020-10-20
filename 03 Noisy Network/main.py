@@ -4,6 +4,14 @@ import Double_DQN
 import replay_buffer as buf
 import torch
 import pickle
+"""
+학습 속도문제로 제외. 엄밀한 제어를 위해선 사용!
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+"""
+torch.manual_seed(7777)
+torch.cuda.manual_seed(7777)
+torch.cuda.manual_seed_all(7777) # if use multi-GPU
 
 def main():
     initial_exploration = 2000 ## 2000개의 memory가 쌓이고 나서 학습 시작!
@@ -42,8 +50,8 @@ def main():
             step += 1
             
             if step > initial_exploration: ## 초기 exploration step을 넘어서면 학습 시작.
-                random_mini_batch, random_mini_batch_next, index, buffer = replay_buffer.make_batch() # random batch sampling.
-                DDQN.train(random_mini_batch, random_mini_batch_next, index, buffer)
+                random_mini_batch = replay_buffer.make_batch() # random batch sampling.
+                DDQN.train(random_mini_batch)
 
             if done: ## 죽었다면 게임 초기화를 위한 반복문 탈출
                 break
