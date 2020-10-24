@@ -39,6 +39,9 @@ class double_dqn():
         
         self.multi_step = multi_step
 
+        self.delta_eps = 0.0001
+        self.alpha = 0.6
+
     def print_eps(self): ## epsilon 값 출력을 위한 함수.
         return self.epsilon
 
@@ -54,12 +57,12 @@ class double_dqn():
         for param, target_param in zip(self.Q_net.parameters(), self.Q_target_net.parameters()):
             target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)
 
-    def train(self, random_mini_batch):
+    def train(self, replay_buffer):
         self.epsilon -= self.epsilon_decay ## 학습해 감에 따라 epilon에 의존하기보단 학습된 정책에 의존되게.
         self.epsilon = max(self.epsilon, 0.05) ## 그래도 가끔씩 새로운 exploration을 위해 최소 0.05은 주기.
         
         # data 분배
-        mini_batch = random_mini_batch ## 그냥 이름 줄인용.
+        mini_batch, w_batch, tree_idx = replay_buffer.make_batch() # random batch sampling.
         
         obs = np.vstack(mini_batch[:, 0]) ## 1-step TD와 Multi-step TD 모두 obs와 actions은 공통으로 사용됨.
         actions = list(mini_batch[:, 1]) 
@@ -73,7 +76,8 @@ class double_dqn():
         rewards = torch.Tensor(rewards) 
         next_obs = torch.Tensor(next_obs)
         masks = torch.Tensor(masks)
-        
+        w_batch = torch.Tensor(w_batch)
+
         # get Q-value
         Q_values = self.Q_net(obs) ## 계속 학습중인 Q NN에서 예상되는 action의 q_value를 얻어온다.
         q_values = Q_values.gather(1, actions).view(-1) ## 각 obs별로 실제 선택된 action들의 q value를 얻어온다. view 해준 이유는 shape을 맞추기 위해.
@@ -84,9 +88,16 @@ class double_dqn():
         target_q_value = Q_target_values.gather(1,next_q_action).view(-1)## max함수를 사용하면 [0]에는 value 값이들어 가 있고 [1]에는 index값이 들어가 있다.
         Y = rewards + masks * self.gamma * target_q_value ## 죽었다면, next가 없으므로 얻어진 reward만 추린다.
         
+        # TD-error delta
+        delta = torch.abs(Y - q_values) 
+        p_j = torch.pow(delta + self.delta_eps, self.alpha)
+        for i, p in zip(tree_idx, p_j):
+            replay_buffer.update_priority(p.item(), i)
+            replay_buffer.update_max_priority(p.item())
+
         # loss 정의 
         MSE = torch.nn.MSELoss() ## mean squear error 사용.
-        loss = MSE(q_values, Y.detach()) ## target은 단순히 주기적으로 업데이트해 네트워크를 유지시키므로, parameter가 미분되선 안된다. 그래서 detach() 해줌.
+        loss = (w_batch * MSE(q_values, Y.detach())).mean() ## target은 단순히 주기적으로 업데이트해 네트워크를 유지시키므로, parameter가 미분되선 안된다. 그래서 detach() 해줌.
         
         # backward 시작!
         self.optimizer.zero_grad()
