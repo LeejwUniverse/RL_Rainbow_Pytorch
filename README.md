@@ -23,7 +23,7 @@
     <img src="https://github.com/LeejwUniverse/RL_Rainbow/blob/master/arts/The_young_painter(1972)_picasso.jpg" width="500">
 </div>
 
-<h1 align="center"> Pablo Picasso - The young painter </h1>
+<h3 align="center"> Pablo Picasso - The young painter </h3>
 
 
 #### Today's song
