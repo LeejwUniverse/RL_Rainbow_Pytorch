@@ -23,7 +23,8 @@
     <img src="https://github.com/LeejwUniverse/RL_Rainbow/blob/master/arts/The_young_painter(1972)_picasso.jpg" width="500">
 </div>
 
-Pablo Picasso - The young painter{: .text-center} 
+<div style="text-align: left"> Pablo Picasso - The young painter </div>
+
 
 #### Today's song
 * Michael Jackson - Heal the World (2020)
