@@ -14,3 +14,20 @@
 |3|Noisy Network|https://arxiv.org/abs/1511.05952|
 |4|C51|https://arxiv.org/abs/1707.06887|
 |5|Rainbow|https://arxiv.org/abs/1710.02298|
+
+
+- - -
+
+#### Today's art
+<div align="center">
+    <img src="https://github.com/LeejwUniverse/RL_Rainbow/blob/master/arts/The_young_painter(1972)_picasso.jpg" width="500">
+</div>
+
+<center>Pablo Picasso - The young painter</center> 
+
+#### Today's song
+* Michael Jackson - Heal the World (2020)
+[Youtube](https://youtu.be/nhcG9wqn0gU)
+
+* Michael Jackson - Heal the World
+[Youtube](https://youtu.be/BWf-eARnf6U)
