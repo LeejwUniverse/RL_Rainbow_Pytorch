@@ -60,7 +60,7 @@ def main():
             show_score.append(score/print_interval) ## reward score 저장.
             print('episode: ',epi,' step: ',step,' epsilon: ',DDQN.print_eps(),' score: ',score/print_interval) # log 출력.
             score = 0
-            with open('new_5step_ddqn.p', 'wb') as file:
+            with open('5step_ddqn.p', 'wb') as file:
                 pickle.dump(show_score, file)
 
     env.close()
