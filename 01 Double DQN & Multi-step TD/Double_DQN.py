@@ -82,7 +82,7 @@ class double_dqn():
         Q_target_values = self.Q_target_net(next_obs)
         next_q_action = self.Q_net(next_obs).max(1)[1].unsqueeze(1)## 실제 발생된 next_state를 넣어, 가장 큰 Q value를 가진 action을 선택한다.
         target_q_value = Q_target_values.gather(1,next_q_action).view(-1)## max함수를 사용하면 [0]에는 value 값이들어 가 있고 [1]에는 index값이 들어가 있다.
-        Y = rewards + masks * self.gamma * target_q_value ## 죽었다면, next가 없으므로 얻어진 reward만 추린다.
+        Y = rewards + masks * (self.gamma ** self.multi_step) * target_q_value ## 죽었다면, next가 없으므로 얻어진 reward만 추린다.
         
         # loss 정의 
         MSE = torch.nn.MSELoss() ## mean squear error 사용.

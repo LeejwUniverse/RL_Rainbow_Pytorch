@@ -1,6 +1,6 @@
 import gym
 import matplotlib.pyplot as plt
-import Double_DQN
+import C51_DQN
 import replay_buffer as buf
 import torch
 import pickle
@@ -25,20 +25,25 @@ def main():
     env = gym.make('CartPole-v1')
 
     multi_step_size = 5 # 1 = 1 step-TD and TD(0), 2 = 2 step-TD, 3 = 3 step-TD
-    DDQN = Double_DQN.double_dqn(state_space, action_space, multi_step_size)
+    atom_size = 4
+    vmin = -10
+    vmax = 10
 
     buffer_size = 100000 # replay buffer_size
     batch_size = 32 # batch size
+
+    C51 = C51_DQN.c51_dqn(state_space, action_space, multi_step_size, batch_size, atom_size, vmin, vmax)
+
     replay_buffer = buf.replay_buffer(buffer_size, multi_step_size, batch_size)
     step = 0 ## 총 step을 계산하기 위한 step.
     score = 0
     show_score = []
 
-    for epi in range(episode+1):
+    for epi in range(episode):
         obs = env.reset() ## 환경 초기화
         for i in range(maximum_steps):
 
-            action = DDQN.action_policy(torch.Tensor(obs))
+            action = C51.action_policy(torch.Tensor(obs))
             next_obs, reward, done, _ = env.step(action) ## _ 가 원래 info 정보를 가지고 있는데, 학습에 필요치 않음.
 
             mask = 0 if done else 1 ## 게임이 종료됬으면, done이 1이면 mask =0 그냥 생존유무 표시용.
@@ -50,7 +55,8 @@ def main():
             step += 1
             
             if step > initial_exploration: ## 초기 exploration step을 넘어서면 학습 시작.
-                DDQN.train(replay_buffer)
+                random_mini_batch = replay_buffer.make_batch() # random batch sampling.
+                C51.train(random_mini_batch)
 
             if done: ## 죽었다면 게임 초기화를 위한 반복문 탈출
                 break
@@ -59,7 +65,7 @@ def main():
             show_score.append(score/print_interval) ## reward score 저장.
             print('episode: ',epi,' step: ',step,' epsilon: ',DDQN.print_eps(),' score: ',score/print_interval) # log 출력.
             score = 0
-            with open('per_5step_ddqn.p', 'wb') as file:
+            with open('5step_ddqn.p', 'wb') as file:
                 pickle.dump(show_score, file)
 
     env.close()
