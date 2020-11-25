@@ -15,7 +15,7 @@
 |4|C51|https://arxiv.org/abs/1707.06887|
 |5|Rainbow|https://arxiv.org/abs/1710.02298|
 
-## 4 Method & 3-step TD test result.
+## 4 Methods & 3-step TD test result.
 
 ![test result](https://github.com/LeejwUniverse/RL_Rainbow_Pytorch/blob/master/image/compare_results.png)
 
