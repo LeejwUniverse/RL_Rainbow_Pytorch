@@ -27,8 +27,8 @@ class Q(nn.Module):
     def forward(self, x):
         x = torch.relu(self.fc1(x))
         x = torch.relu(self.fc2(x))
-        atoms = self.fc3(x).view(-1, self.action_space, self.atom_size)
-        p_dist = F.softmax(atoms, dim=-1)
-        Q_values = torch.sum(self.z * p_dist, dim=2)
-
+        atoms = self.fc3(x).view(-1, self.action_space, self.atom_size) ## [batch, action_space, num_atoms]
+        p_dist = F.softmax(atoms, dim=-1) ## [batch, action_space, num_atoms]
+        #p_dist = p_dist.clamp(min=1e-3)
+        Q_values = torch.sum(self.z * p_dist, dim=-1) ## [batch, action_space]
         return Q_values, p_dist

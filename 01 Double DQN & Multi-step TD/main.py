@@ -24,7 +24,7 @@ def main():
     state_space = 4
     env = gym.make('CartPole-v1')
 
-    multi_step_size = 5 # 1 = 1 step-TD and TD(0), 2 = 2 step-TD, 3 = 3 step-TD
+    multi_step_size = 1 # 1 = 1 step-TD and TD(0), 2 = 2 step-TD, 3 = 3 step-TD
     DDQN = Double_DQN.double_dqn(state_space, action_space, multi_step_size)
 
     buffer_size = 100000 # replay buffer_size
@@ -60,7 +60,7 @@ def main():
             show_score.append(score/print_interval) ## reward score 저장.
             print('episode: ',epi,' step: ',step,' epsilon: ',DDQN.print_eps(),' score: ',score/print_interval) # log 출력.
             score = 0
-            with open('5step_ddqn.p', 'wb') as file:
+            with open('100step_ddqn.p', 'wb') as file:
                 pickle.dump(show_score, file)
 
     env.close()

@@ -24,8 +24,8 @@ def main():
     state_space = 4
     env = gym.make('CartPole-v1')
 
-    multi_step_size = 5 # 1 = 1 step-TD and TD(0), 2 = 2 step-TD, 3 = 3 step-TD
-    atom_size = 4
+    multi_step_size = 2 # 1 = 1 step-TD and TD(0), 2 = 2 step-TD, 3 = 3 step-TD
+    atom_size = 51
     vmin = -10
     vmax = 10
 
@@ -63,9 +63,9 @@ def main():
                 
         if epi % print_interval == 0 and epi != 0:
             show_score.append(score/print_interval) ## reward score 저장.
-            print('episode: ',epi,' step: ',step,' epsilon: ',DDQN.print_eps(),' score: ',score/print_interval) # log 출력.
+            print('episode: ', epi,' step: ', step,' epsilon: ', C51.print_eps(),' score: ', score/print_interval) # log 출력.
             score = 0
-            with open('5step_ddqn.p', 'wb') as file:
+            with open('2step_C51.p', 'wb') as file:
                 pickle.dump(show_score, file)
 
     env.close()

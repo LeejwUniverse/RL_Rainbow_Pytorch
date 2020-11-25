@@ -10,7 +10,7 @@ import time
 from collections import deque
 import random
 
-import C51_network
+import Rainbow_network
 """
 학습 속도문제로 제외. 엄밀한 제어를 위해선 사용!
 torch.backends.cudnn.deterministic = True
@@ -22,10 +22,10 @@ torch.cuda.manual_seed_all(7777) # if use multi-GPU
 np.random.seed(7777)
 random.seed(7777)
 
-class c51_dqn():
+class rainbow_dqn():
     def __init__(self, state_space, action_space, multi_step, batch_size, atom_size, vmin, vmax):
-        self.Q_net = C51_network.Q(state_space, action_space, atom_size, vmin, vmax) ## behavior network.
-        self.Q_target_net = C51_network.Q(state_space, action_space, atom_size, vmin, vmax) ## target network.
+        self.Q_net = Rainbow_network.Q(state_space, action_space, atom_size, vmin, vmax) ## behavior network.
+        self.Q_target_net = Rainbow_network.Q(state_space, action_space, atom_size, vmin, vmax) ## target network.
         self.Q_target_net.load_state_dict(self.Q_net.state_dict()) ## 초기에 값은 weight로 초기화 하고 시작함. Q_net의 파라미터를 복사함.
 
         self.learning_rate = 0.0005
@@ -34,38 +34,40 @@ class c51_dqn():
         self.action_space = action_space
         self.gamma = 0.99 ## discount reward를 위한 감마.
         self.tau = 0.001 ## soft target update에 사용되는 타우.
-        self.epsilon = 1 ## 초기 epsilon 1부터 시작.
-        self.epsilon_decay = 0.00001 ## epsilon 감쇠 값.
+        """ epsilon 없음."""
+        # self.epsilon = 1 ## 초기 epsilon 1부터 시작.
+        # self.epsilon_decay = 0.00001 ## epsilon 감쇠 값.
         
         self.multi_step = multi_step
         self.batch_size = batch_size
+        ## C51
         self.atom_size = atom_size
         self.vmin = vmin
         self.vmax = vmax
         self.delta_z = (vmax - vmin) / (atom_size - 1)
         self.z = torch.arange(self.vmin, self.vmax + self.delta_z, self.delta_z)
-     
-    def print_eps(self): ## epsilon 값 출력을 위한 함수.
-        return self.epsilon
+        ## Per
+        self.delta_eps = 0.0001
+        self.alpha = 0.5 ## rainbow 논문에서는 w라고 표현됬음.
 
     def action_policy(self, state):
         Q_values, _ = self.Q_net(state)
-        if np.random.rand() <= self.epsilon: ## 0~1의 균일분포 표준정규분포 난수를 생성. 정해준 epsilon 값보다 작은 random 값이 나오면 
-            action = random.randrange(self.action_space) ## action을 random하게 선택합니다.
-            return action
-        else: ## epsilon 값보다 크면, 학습된 Q_player NN 에서 얻어진 Q_values 값중 가장 큰 action을 선택합니다.
-            return Q_values.argmax().item()
+        # if np.random.rand() <= self.epsilon: ## 0~1의 균일분포 표준정규분포 난수를 생성. 정해준 epsilon 값보다 작은 random 값이 나오면 
+        #     action = random.randrange(self.action_space) ## action을 random하게 선택합니다.
+        #     return action
+        # else: ## epsilon 값보다 크면, 학습된 Q_player NN 에서 얻어진 Q_values 값중 가장 큰 action을 선택합니다.
+        return Q_values.argmax().item()
     
     def soft_update(self): ## DDPG에서 사용된 soft target update 방식.
         for param, target_param in zip(self.Q_net.parameters(), self.Q_target_net.parameters()):
             target_param.data.copy_(self.tau * param.data + (1.0 - self.tau) * target_param.data)
 
-    def train(self, random_mini_batch):
-        self.epsilon -= self.epsilon_decay ## 학습해 감에 따라 epilon에 의존하기보단 학습된 정책에 의존되게.
-        self.epsilon = max(self.epsilon, 0.05) ## 그래도 가끔씩 새로운 exploration을 위해 최소 0.05은 주기.
+    def train(self, replay_buffer):
+        # self.epsilon -= self.epsilon_decay ## 학습해 감에 따라 epilon에 의존하기보단 학습된 정책에 의존되게.
+        # self.epsilon = max(self.epsilon, 0.05) ## 그래도 가끔씩 새로운 exploration을 위해 최소 0.05은 주기.
         
         # data 분배
-        mini_batch = random_mini_batch ## 그냥 이름 줄인용.
+        mini_batch, w_batch, tree_idx = replay_buffer.make_batch() # random batch sampling.
         
         obs = np.vstack(mini_batch[:, 0]) ## 1-step TD와 Multi-step TD 모두 obs와 actions은 공통으로 사용됨.
         actions = list(mini_batch[:, 1]) 
@@ -79,6 +81,7 @@ class c51_dqn():
         rewards = torch.Tensor(rewards).unsqueeze(-1)
         next_obs = torch.Tensor(next_obs)
         masks = torch.Tensor(masks).unsqueeze(-1)
+        w_batch = torch.Tensor(w_batch)
 
         # get p_distribution.
         _, p_dist = self.Q_net(obs) ## observation에 해당하는 p_distribution을 얻는다.
@@ -110,8 +113,18 @@ class c51_dqn():
                 m_dist[i, u[i,un_mask[i]]] +=  (q_dist[i] * bj_l[i])[un_mask[i]]
 
         # loss 정의
-        loss = -(m_dist * log_p_dist).sum(1).mean()
+        c51_loss = -(m_dist * log_p_dist).sum(1) # 여기까진 c51과 같다.
+        loss = (w_batch * c51_loss).mean() # 다 계산한 후 mean 하는게 포인트!
         
+        # error delta for Per
+        delta = c51_loss ## rainbow 논문에서 기존에 사용된 absolute loss 대신 kl loss로 priority 사용한다고 되어있음.
+        
+        p_j = torch.pow(delta + self.delta_eps, self.alpha)
+
+        for i, p in zip(tree_idx, p_j):
+            replay_buffer.update_priority(p.item(), i)
+            replay_buffer.update_max_priority(p.item())
+
         # backward 시작!
         self.optimizer.zero_grad()
         loss.backward()
