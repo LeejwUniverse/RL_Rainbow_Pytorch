@@ -89,7 +89,7 @@ class c51_dqn():
         # get target q_distribution.
             Q_target_values, q_dist = self.Q_target_net(next_obs) ## next_obervation에 해당하는 q_distribution을 얻는다.
             next_actions = Q_target_values.max(1)[1] ## 가장 큰 target Q value를 가진 next_action을 선택한다. (위와 다른게 next는 수집해 저장하지 않아서.)
-            q_dist = q_dist[range(self.batch_size), next_actions] ## 실제 선택된 next_action의 p_distribution만 선택한다.
+            q_dist = q_dist[range(self.batch_size), next_actions] ## 실제 선택된 next_action의 _distribution만 선택한다.
             
             m_dist = torch.zeros(self.batch_size, self.atom_size)
             
